@@ -73,6 +73,8 @@ services:
       dockerfile: UniverseLabs.Oms.Consumer/Dockerfile
     environment:
       - ASPNETCORE_ENVIRONMENT=Production
+    deploy:
+      replicas: 5
     depends_on:
       - rabbitmq
       - pgbouncer
