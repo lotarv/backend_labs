@@ -8,23 +8,23 @@ using UniverseLabs.Oms.Consumer.Config;
 
 namespace UniverseLabs.Oms.Consumer.Consumers;
 
-public class BatchOmsOrderCreatedConsumer(
+public class BatchOmsOrderStatusChangedConsumer(
     IOptions<RabbitMqSettings> rabbitMqSettings,
     IServiceProvider serviceProvider)
-    : BaseBatchMessageConsumer<OrderCreatedMessage>(rabbitMqSettings.Value, settings => settings.OrderCreated)
+    : BaseBatchMessageConsumer<OrderStatusChangedMessage>(rabbitMqSettings.Value, settings => settings.OrderStatusChanged)
 {
-    protected override async Task ProcessMessages(OrderCreatedMessage[] messages)
+    protected override async Task ProcessMessages(OrderStatusChangedMessage[] messages)
     {
         using var scope = serviceProvider.CreateScope();
         var client = scope.ServiceProvider.GetRequiredService<OmsClient>();
 
         await client.LogOrder(new V1AuditLogOrderRequest
         {
-            Orders = messages.SelectMany(order => order.OrderItems.Select(ol =>
+            Orders = messages.SelectMany(order => order.OrderItemIds.Select(orderItemId =>
                 new V1AuditLogOrderRequest.LogOrder
                 {
-                    OrderId = order.Id,
-                    OrderItemId = ol.Id,
+                    OrderId = order.OrderId,
+                    OrderItemId = orderItemId,
                     CustomerId = order.CustomerId,
                     OrderStatus = order.OrderStatus
                 })).ToArray()

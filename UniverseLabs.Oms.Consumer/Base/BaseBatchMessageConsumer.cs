@@ -7,11 +7,14 @@ using UniverseLabs.Oms.Consumer.Config;
 
 namespace UniverseLabs.Oms.Consumer.Base;
 
-public abstract class BaseBatchMessageConsumer<T>(RabbitMqSettings rabbitMqSettings) : IHostedService
+public abstract class BaseBatchMessageConsumer<T>(
+    RabbitMqSettings rabbitMqSettings,
+    Func<RabbitMqSettings, RabbitMqSettings.TopicSettingsUnit> topicSelector) : IHostedService
     where T : class
 {
     private IConnection? _connection;
     private IChannel? _channel;
+    private readonly RabbitMqSettings.TopicSettingsUnit _topicSettings = topicSelector(rabbitMqSettings);
 
     private readonly ConnectionFactory _factory = new()
     {
@@ -32,13 +35,13 @@ public abstract class BaseBatchMessageConsumer<T>(RabbitMqSettings rabbitMqSetti
         _messageBuffer = new List<MessageInfo>();
         _processingSemaphore = new SemaphoreSlim(1, 1);
 
-        await _channel.BasicQosAsync(0, (ushort)(rabbitMqSettings.BatchSize * 2), false, token);
+        await _channel.BasicQosAsync(0, (ushort)(_topicSettings.BatchSize * 2), false, token);
 
-        var batchTimeout = TimeSpan.FromSeconds(rabbitMqSettings.BatchTimeoutSeconds);
+        var batchTimeout = TimeSpan.FromSeconds(_topicSettings.BatchTimeoutSeconds);
         _batchTimer = new Timer(ProcessBatchByTimeout, null, batchTimeout, batchTimeout);
 
         await _channel.QueueDeclareAsync(
-            queue: rabbitMqSettings.OrderCreatedQueue,
+            queue: _topicSettings.Queue,
             durable: false,
             exclusive: false,
             autoDelete: false,
@@ -49,7 +52,7 @@ public abstract class BaseBatchMessageConsumer<T>(RabbitMqSettings rabbitMqSetti
         consumer.ReceivedAsync += OnMessageReceived;
 
         await _channel.BasicConsumeAsync(
-            queue: rabbitMqSettings.OrderCreatedQueue,
+            queue: _topicSettings.Queue,
             autoAck: false,
             consumer: consumer,
             cancellationToken: token);
@@ -74,7 +77,7 @@ public abstract class BaseBatchMessageConsumer<T>(RabbitMqSettings rabbitMqSetti
                 ReceivedAt = DateTimeOffset.UtcNow
             });
 
-            if (_messageBuffer.Count >= rabbitMqSettings.BatchSize)
+            if (_messageBuffer.Count >= _topicSettings.BatchSize)
             {
                 await ProcessBatch();
             }

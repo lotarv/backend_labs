@@ -150,12 +150,21 @@ public class OrderService(
             }
         }
 
+        var orderItems = await orderItemRepository.Query(new QueryOrderItemsDalModel
+        {
+            OrderIds = orders.Select(x => x.Id).ToArray()
+        }, token);
+
+        var orderItemLookup = orderItems.ToLookup(x => x.OrderId);
+
         var now = DateTimeOffset.UtcNow;
         var updatedIds = await orderRepository.UpdateStatus(orderIds, newStatus, now, token);
 
-        var messages = updatedIds.Select(id => new OrderStatusChangedMessage
+        var messages = orders.Select(order => new OrderStatusChangedMessage
         {
-            OrderId = id,
+            OrderId = order.Id,
+            CustomerId = order.CustomerId,
+            OrderItemIds = orderItemLookup[order.Id].Select(x => x.Id).ToArray(),
             OrderStatus = newStatus
         }).ToArray();
 
