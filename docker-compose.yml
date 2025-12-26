@@ -1,13 +1,13 @@
 services:
   postgres:
-    image: postgres
+    image: postgres:16
     container_name: postgres
     environment:
       - POSTGRES_USER=user
       - POSTGRES_PASSWORD=mypassword
       - POSTGRES_DB=postgres
       - POSTGRES_HOST_AUTH_METHOD=scram-sha-256
-      - POSTGRES_INITDB_ARGS=--auth-host=scram-sha-256
+      - POSTGRES_INITDB_ARGS=--auth=scram-sha-256
     volumes:
       - pgdata:/var/lib/postgresql/data/
       - ./postgresql.conf:/etc/postgresql/postgresql.conf
@@ -20,8 +20,9 @@ services:
       retries: 3
   
   pgbouncer:
-    image: bitnami/pgbouncer
+    image: public.ecr.aws/bitnami/pgbouncer:1.24.1
     container_name: pgbouncer
+    platform: linux/amd64
     environment:
       - POSTGRESQL_HOST=postgres
       - POSTGRESQL_USERNAME=user
