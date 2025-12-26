@@ -1,17 +1,17 @@
+using Microsoft.Extensions.Hosting;
 using UniverseLabs.Oms.Consumer.Clients;
 using UniverseLabs.Oms.Consumer.Config;
 using UniverseLabs.Oms.Consumer.Consumers;
-using Microsoft.Extensions.Hosting;
 
 var builder = WebApplication.CreateBuilder(args);
-builder.Services.Configure<RabbitMqSettings>(builder.Configuration.GetSection(nameof(RabbitMqSettings)));
+builder.Services.Configure<KafkaSettings>(builder.Configuration.GetSection(nameof(KafkaSettings)));
 builder.Services.Configure<HostOptions>(options =>
 {
     options.ServicesStartConcurrently = true;
     options.ServicesStopConcurrently = true;
 });
-builder.Services.AddHostedService<BatchOmsOrderCreatedConsumer>();
-builder.Services.AddHostedService<BatchOmsOrderStatusChangedConsumer>();
+builder.Services.AddHostedService<OmsOrderCreatedConsumer>();
+builder.Services.AddHostedService<OmsOrderStatusChangedConsumer>();
 builder.Services.AddHttpClient<OmsClient>(c =>
     c.BaseAddress = new Uri(builder.Configuration["HttpClient:Oms:BaseAddress"]));
 
