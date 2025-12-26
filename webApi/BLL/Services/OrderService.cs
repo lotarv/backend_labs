@@ -3,6 +3,8 @@ using Backend.DAL.Interfaces;
 using Backend.DAL.Models;
 using Microsoft.Extensions.Options;
 using UniverseLabs.Messages;
+using BllOrderItemUnit = Backend.BLL.Models.OrderItemUnit;
+using MessagesOrderItemUnit = UniverseLabs.Messages.OrderItemUnit;
 using WebApi.Config;
 
 namespace Backend.BLL.Services;
@@ -71,7 +73,7 @@ public class OrderService(
                 TotalPriceCurrency = x.TotalPriceCurrency,
                 CreatedAt = x.CreatedAt,
                 UpdatedAt = x.UpdatedAt,
-                OrderItems = x.OrderItems.Select(i => new OrderItemUnit
+                OrderItems = x.OrderItems.Select(i => new MessagesOrderItemUnit
                 {
                     Id = i.Id,
                     OrderId = i.OrderId,
@@ -143,7 +145,7 @@ public class OrderService(
             TotalPriceCurrency = x.TotalPriceCurrency,
             CreatedAt = x.CreatedAt,
             UpdatedAt = x.UpdatedAt,
-            OrderItems = orderItemLookup?[x.Id].Select(o => new OrderItemUnit
+            OrderItems = orderItemLookup?[x.Id].Select(o => new BllOrderItemUnit
             {
                 Id = o.Id,
                 OrderId = o.OrderId,
