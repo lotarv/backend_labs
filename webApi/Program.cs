@@ -16,6 +16,8 @@ builder.Services.AddScoped<UnitOfWork>();
 // зависимость, которая автоматически подхватывает все контроллеры в проекте
 
 builder.Services.Configure<DbSettings>(builder.Configuration.GetSection(nameof(DbSettings)));
+builder.Services.Configure<WebApi.Config.RabbitMqSettings>(
+    builder.Configuration.GetSection(nameof(WebApi.Config.RabbitMqSettings)));
 
 builder.Services.AddScoped<IOrderRepository, OrderRepository>();
 builder.Services.AddScoped<IOrderItemRepository, OrderItemRepository>();
