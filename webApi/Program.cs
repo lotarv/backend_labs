@@ -1,6 +1,7 @@
 // создается билдер веб приложения
 
 using Backend.BLL.Services;
+using Backend.Jobs;
 using Backend.DAL.Interfaces;
 using Backend.DAL.Repositories;
 using Backend.Validators;
@@ -34,6 +35,7 @@ builder.Services.AddControllers().AddJsonOptions(options =>
 });
 // добавляем swagger
 builder.Services.AddSwaggerGen();
+builder.Services.AddHostedService<OrderGenerator>();
 
 // собираем билдер в приложение
 var app = builder.Build();
