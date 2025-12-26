@@ -1,0 +1,13 @@
+.DS_Store
+.dotnet/
+.idea/
+readmes/
+
+**/bin/
+**/obj/
+
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+*.DotSettings.user
