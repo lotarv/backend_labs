@@ -2,6 +2,7 @@
 .dotnet/
 .idea/
 readmes/
+kafka-data/
 
 **/bin/
 **/obj/
