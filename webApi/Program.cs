@@ -6,6 +6,7 @@ using Backend.DAL.Repositories;
 using Backend.Validators;
 using Dapper;
 using FluentValidation;
+using System.Text.Json;
 using WebApi.DAL.Repositories;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -27,7 +28,10 @@ builder.Services.AddScoped<AuditLogOrderService>();
 builder.Services.AddScoped<RabbitMqService>();
 builder.Services.AddValidatorsFromAssemblyContaining(typeof(Program));
 builder.Services.AddScoped<ValidatorFactory>();
-builder.Services.AddControllers();
+builder.Services.AddControllers().AddJsonOptions(options =>
+{
+    options.JsonSerializerOptions.PropertyNamingPolicy = JsonNamingPolicy.SnakeCaseLower;
+});
 // добавляем swagger
 builder.Services.AddSwaggerGen();
 
