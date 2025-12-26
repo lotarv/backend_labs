@@ -1,10 +1,18 @@
 using Backend.BLL.Models;
 using Backend.DAL.Interfaces;
 using Backend.DAL.Models;
+using Microsoft.Extensions.Options;
+using UniverseLabs.Messages;
+using WebApi.Config;
 
 namespace Backend.BLL.Services;
 
-public class OrderService(UnitOfWork unitOfWork, IOrderRepository orderRepository, IOrderItemRepository orderItemRepository)
+public class OrderService(
+    UnitOfWork unitOfWork,
+    IOrderRepository orderRepository,
+    IOrderItemRepository orderItemRepository,
+    RabbitMqService rabbitMqService,
+    IOptions<RabbitMqSettings> rabbitMqSettings)
 {
     /// <summary>
     /// Метод создания заказов
@@ -52,7 +60,38 @@ public class OrderService(UnitOfWork unitOfWork, IOrderRepository orderRepositor
         
             var orderItemLookup = orderItems.ToLookup(x => x.OrderId);
         
-            return Map(ordersToInsert, orderItemLookup);
+            var orders = Map(ordersToInsert, orderItemLookup);
+
+            var messages = orders.Select(x => new OrderCreatedMessage
+            {
+                Id = x.Id,
+                CustomerId = x.CustomerId,
+                DeliveryAddress = x.DeliveryAddress,
+                TotalPriceCents = x.TotalPriceCents,
+                TotalPriceCurrency = x.TotalPriceCurrency,
+                CreatedAt = x.CreatedAt,
+                UpdatedAt = x.UpdatedAt,
+                OrderItems = x.OrderItems.Select(i => new OrderItemUnit
+                {
+                    Id = i.Id,
+                    OrderId = i.OrderId,
+                    ProductId = i.ProductId,
+                    Quantity = i.Quantity,
+                    ProductTitle = i.ProductTitle,
+                    ProductUrl = i.ProductUrl,
+                    PriceCents = i.PriceCents,
+                    PriceCurrency = i.PriceCurrency,
+                    CreatedAt = i.CreatedAt,
+                    UpdatedAt = i.UpdatedAt
+                }).ToArray()
+            }).ToArray();
+
+            await rabbitMqService.Publish(
+                messages,
+                rabbitMqSettings.Value.OrderCreatedQueue,
+                token);
+
+            return orders;
         }
         catch (Exception e) 
         {

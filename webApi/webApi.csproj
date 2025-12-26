@@ -27,6 +27,7 @@
       <ProjectReference Include="..\Migrations\Migrations.csproj" />
       <ProjectReference Include="..\Models\Models.csproj" />
       <ProjectReference Include="..\UniverseLabs.Common\UniverseLabs.Common.csproj" />
+      <ProjectReference Include="..\UniverseLabs.Messages\UniverseLabs.Messages.csproj" />
     </ItemGroup>
 
 </Project>
