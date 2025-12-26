@@ -1,7 +1,6 @@
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 using Models.Dto.V1.Requests;
-using System.Threading;
 using UniverseLabs.Messages;
 using UniverseLabs.Oms.Consumer.Base;
 using UniverseLabs.Oms.Consumer.Clients;
@@ -9,30 +8,23 @@ using UniverseLabs.Oms.Consumer.Config;
 
 namespace UniverseLabs.Oms.Consumer.Consumers;
 
-public class BatchOmsOrderCreatedConsumer(
+public class BatchOmsOrderStatusChangedConsumer(
     IOptions<RabbitMqSettings> rabbitMqSettings,
     IServiceProvider serviceProvider)
-    : BaseBatchMessageConsumer<OrderCreatedMessage>(rabbitMqSettings.Value, settings => settings.OrderCreated)
+    : BaseBatchMessageConsumer<OrderStatusChangedMessage>(rabbitMqSettings.Value, settings => settings.OrderStatusChanged)
 {
-    private int _batchCounter;
-
-    protected override async Task ProcessMessages(OrderCreatedMessage[] messages)
+    protected override async Task ProcessMessages(OrderStatusChangedMessage[] messages)
     {
-        if (Interlocked.Increment(ref _batchCounter) % 5 == 0)
-        {
-            throw new InvalidOperationException("Simulated batch failure");
-        }
-
         using var scope = serviceProvider.CreateScope();
         var client = scope.ServiceProvider.GetRequiredService<OmsClient>();
 
         await client.LogOrder(new V1AuditLogOrderRequest
         {
-            Orders = messages.SelectMany(order => order.OrderItems.Select(ol =>
+            Orders = messages.SelectMany(order => order.OrderItemIds.Select(orderItemId =>
                 new V1AuditLogOrderRequest.LogOrder
                 {
-                    OrderId = order.Id,
-                    OrderItemId = ol.Id,
+                    OrderId = order.OrderId,
+                    OrderItemId = orderItemId,
                     CustomerId = order.CustomerId,
                     OrderStatus = order.OrderStatus
                 })).ToArray()

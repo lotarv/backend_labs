@@ -69,6 +69,29 @@ public class OrderController(OrderService orderService, ValidatorFactory validat
             Orders = Map(res)
         });
     }
+
+    [HttpPost("update-status")]
+    public async Task<ActionResult<V1UpdateOrderStatusResponse>> V1UpdateOrdersStatus(
+        [FromBody] V1UpdateOrdersStatusRequest request,
+        CancellationToken token)
+    {
+        var validationResult = await validatorFactory.GetValidator<V1UpdateOrdersStatusRequest>()
+            .ValidateAsync(request, token);
+        if (!validationResult.IsValid)
+        {
+            return BadRequest(validationResult.ToDictionary());
+        }
+
+        try
+        {
+            await orderService.UpdateOrdersStatus(request.OrderIds, request.NewStatus, token);
+            return Ok(new V1UpdateOrderStatusResponse());
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(ex.Message);
+        }
+    }
     
     private Models.Dto.Common.OrderUnit[] Map(OrderUnit[] orders)
     {
@@ -79,6 +102,7 @@ public class OrderController(OrderService orderService, ValidatorFactory validat
             DeliveryAddress = x.DeliveryAddress,
             TotalPriceCents = x.TotalPriceCents,
             TotalPriceCurrency = x.TotalPriceCurrency,
+            OrderStatus = x.OrderStatus,
             CreatedAt = x.CreatedAt,
             UpdatedAt = x.UpdatedAt,
             OrderItems = x.OrderItems.Select(p => new Models.Dto.Common.OrderItemUnit

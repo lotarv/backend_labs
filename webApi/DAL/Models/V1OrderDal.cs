@@ -12,6 +12,8 @@ public class V1OrderDal
 
     public string TotalPriceCurrency { get; set; }
 
+    public string OrderStatus { get; set; } = string.Empty;
+
     public DateTimeOffset CreatedAt { get; set; }
     
     public DateTimeOffset UpdatedAt { get; set; }

@@ -1,11 +1,9 @@
 using Backend.BLL.Models;
 using Backend.DAL.Interfaces;
 using Backend.DAL.Models;
-using Microsoft.Extensions.Options;
 using UniverseLabs.Messages;
 using BllOrderItemUnit = Backend.BLL.Models.OrderItemUnit;
 using MessagesOrderItemUnit = UniverseLabs.Messages.OrderItemUnit;
-using WebApi.Config;
 
 namespace Backend.BLL.Services;
 
@@ -13,8 +11,7 @@ public class OrderService(
     UnitOfWork unitOfWork,
     IOrderRepository orderRepository,
     IOrderItemRepository orderItemRepository,
-    RabbitMqService rabbitMqService,
-    IOptions<RabbitMqSettings> rabbitMqSettings)
+    RabbitMqService rabbitMqService)
 {
     /// <summary>
     /// Метод создания заказов
@@ -32,6 +29,7 @@ public class OrderService(
                 DeliveryAddress = o.DeliveryAddress,
                 TotalPriceCents = o.TotalPriceCents,
                 TotalPriceCurrency = o.TotalPriceCurrency,
+                OrderStatus = "created",
                 CreatedAt = now,
                 UpdatedAt = now
             }).ToArray(), token);
@@ -71,6 +69,7 @@ public class OrderService(
                 DeliveryAddress = x.DeliveryAddress,
                 TotalPriceCents = x.TotalPriceCents,
                 TotalPriceCurrency = x.TotalPriceCurrency,
+                OrderStatus = x.OrderStatus,
                 CreatedAt = x.CreatedAt,
                 UpdatedAt = x.UpdatedAt,
                 OrderItems = x.OrderItems.Select(i => new MessagesOrderItemUnit
@@ -88,10 +87,7 @@ public class OrderService(
                 }).ToArray()
             }).ToArray();
 
-            await rabbitMqService.Publish(
-                messages,
-                rabbitMqSettings.Value.OrderCreatedQueue,
-                token);
+            await rabbitMqService.Publish(messages, token);
 
             return orders;
         }
@@ -133,6 +129,49 @@ public class OrderService(
 
         return Map(orders, orderItemLookup);
     }
+
+    public async Task<long[]> UpdateOrdersStatus(long[] orderIds, string newStatus, CancellationToken token)
+    {
+        var orders = await orderRepository.Query(new QueryOrdersDalModel
+        {
+            Ids = orderIds
+        }, token);
+
+        if (orders.Length == 0)
+        {
+            return [];
+        }
+
+        foreach (var order in orders)
+        {
+            if (order.OrderStatus == "created" && newStatus == "completed")
+            {
+                throw new InvalidOperationException("Invalid status transition");
+            }
+        }
+
+        var orderItems = await orderItemRepository.Query(new QueryOrderItemsDalModel
+        {
+            OrderIds = orders.Select(x => x.Id).ToArray()
+        }, token);
+
+        var orderItemLookup = orderItems.ToLookup(x => x.OrderId);
+
+        var now = DateTimeOffset.UtcNow;
+        var updatedIds = await orderRepository.UpdateStatus(orderIds, newStatus, now, token);
+
+        var messages = orders.Select(order => new OrderStatusChangedMessage
+        {
+            OrderId = order.Id,
+            CustomerId = order.CustomerId,
+            OrderItemIds = orderItemLookup[order.Id].Select(x => x.Id).ToArray(),
+            OrderStatus = newStatus
+        }).ToArray();
+
+        await rabbitMqService.Publish(messages, token);
+
+        return updatedIds;
+    }
     
     private OrderUnit[] Map(V1OrderDal[] orders, ILookup<long, V1OrderItemDal> orderItemLookup = null)
     {
@@ -143,6 +182,7 @@ public class OrderService(
             DeliveryAddress = x.DeliveryAddress,
             TotalPriceCents = x.TotalPriceCents,
             TotalPriceCurrency = x.TotalPriceCurrency,
+            OrderStatus = x.OrderStatus,
             CreatedAt = x.CreatedAt,
             UpdatedAt = x.UpdatedAt,
             OrderItems = orderItemLookup?[x.Id].Select(o => new BllOrderItemUnit

@@ -11,6 +11,7 @@ public class OrderGenerator(IServiceProvider serviceProvider) : BackgroundServic
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
         var fixture = new Fixture();
+        var random = new Random();
         using var scope = serviceProvider.CreateScope();
         var orderService = scope.ServiceProvider.GetRequiredService<OrderService>();
 
@@ -34,7 +35,17 @@ public class OrderGenerator(IServiceProvider serviceProvider) : BackgroundServic
                 })
                 .ToArray();
 
-            await orderService.BatchInsert(orders, stoppingToken);
+            var createdOrders = await orderService.BatchInsert(orders, stoppingToken);
+
+            var updateCount = random.Next(1, createdOrders.Length + 1);
+            var orderIdsToUpdate = createdOrders
+                .OrderBy(_ => random.Next())
+                .Take(updateCount)
+                .Select(x => x.Id)
+                .ToArray();
+
+            var nextStatus = random.Next(0, 2) == 0 ? "processing" : "cancelled";
+            await orderService.UpdateOrdersStatus(orderIdsToUpdate, nextStatus, stoppingToken);
 
             await Task.Delay(250, stoppingToken);
         }
