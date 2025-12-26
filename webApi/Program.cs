@@ -6,6 +6,7 @@ using Backend.DAL.Repositories;
 using Backend.Validators;
 using Dapper;
 using FluentValidation;
+using System.Text.Json;
 using WebApi.DAL.Repositories;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -16,13 +17,21 @@ builder.Services.AddScoped<UnitOfWork>();
 // зависимость, которая автоматически подхватывает все контроллеры в проекте
 
 builder.Services.Configure<DbSettings>(builder.Configuration.GetSection(nameof(DbSettings)));
+builder.Services.Configure<WebApi.Config.RabbitMqSettings>(
+    builder.Configuration.GetSection(nameof(WebApi.Config.RabbitMqSettings)));
 
 builder.Services.AddScoped<IOrderRepository, OrderRepository>();
 builder.Services.AddScoped<IOrderItemRepository, OrderItemRepository>();
+builder.Services.AddScoped<IAuditLogOrderRepository, AuditLogOrderRepository>();
 builder.Services.AddScoped<OrderService>();
+builder.Services.AddScoped<AuditLogOrderService>();
+builder.Services.AddScoped<RabbitMqService>();
 builder.Services.AddValidatorsFromAssemblyContaining(typeof(Program));
 builder.Services.AddScoped<ValidatorFactory>();
-builder.Services.AddControllers();
+builder.Services.AddControllers().AddJsonOptions(options =>
+{
+    options.JsonSerializerOptions.PropertyNamingPolicy = JsonNamingPolicy.SnakeCaseLower;
+});
 // добавляем swagger
 builder.Services.AddSwaggerGen();
 
