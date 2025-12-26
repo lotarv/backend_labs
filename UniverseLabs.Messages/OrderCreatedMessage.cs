@@ -1,6 +1,6 @@
 namespace UniverseLabs.Messages;
 
-public class OrderCreatedMessage : BaseMessage
+public class OrderCreatedMessage
 {
     public long Id { get; set; }
 
@@ -19,6 +19,4 @@ public class OrderCreatedMessage : BaseMessage
     public DateTimeOffset UpdatedAt { get; set; }
 
     public OrderItemUnit[] OrderItems { get; set; } = [];
-
-    public override string RoutingKey => "order.created";
 }

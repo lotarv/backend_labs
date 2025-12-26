@@ -12,6 +12,7 @@ public class OrderGenerator(IServiceProvider serviceProvider) : BackgroundServic
     {
         var fixture = new Fixture();
         var random = new Random();
+        var customerIds = new long[] { 1, 2, 3, 4, 5 };
         using var scope = serviceProvider.CreateScope();
         var orderService = scope.ServiceProvider.GetRequiredService<OrderService>();
 
@@ -28,6 +29,7 @@ public class OrderGenerator(IServiceProvider serviceProvider) : BackgroundServic
                     var order = fixture.Build<OrderUnit>()
                         .With(x => x.TotalPriceCurrency, "RUB")
                         .With(x => x.TotalPriceCents, 1000)
+                        .With(x => x.CustomerId, customerIds[random.Next(customerIds.Length)])
                         .With(x => x.OrderItems, [orderItem])
                         .Create();
 

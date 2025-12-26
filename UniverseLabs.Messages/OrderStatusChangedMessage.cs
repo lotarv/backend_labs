@@ -1,6 +1,6 @@
 namespace UniverseLabs.Messages;
 
-public class OrderStatusChangedMessage : BaseMessage
+public class OrderStatusChangedMessage
 {
     public long OrderId { get; set; }
 
@@ -9,6 +9,4 @@ public class OrderStatusChangedMessage : BaseMessage
     public long[] OrderItemIds { get; set; } = [];
 
     public string OrderStatus { get; set; } = string.Empty;
-
-    public override string RoutingKey => "order.status.changed";
 }

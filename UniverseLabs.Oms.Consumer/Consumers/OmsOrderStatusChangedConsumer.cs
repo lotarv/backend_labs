@@ -9,27 +9,27 @@ using UniverseLabs.Oms.Consumer.Config;
 
 namespace UniverseLabs.Oms.Consumer.Consumers;
 
-public class BatchOmsOrderStatusChangedConsumer(
+public class OmsOrderStatusChangedConsumer(
     IOptions<KafkaSettings> kafkaSettings,
     IServiceProvider serviceProvider,
-    ILogger<BaseBatchKafkaConsumer<OrderStatusChangedMessage>> logger)
-    : BaseBatchKafkaConsumer<OrderStatusChangedMessage>(kafkaSettings, kafkaSettings.Value.OmsOrderStatusChangedTopic, logger)
+    ILogger<BaseKafkaConsumer<OrderStatusChangedMessage>> logger)
+    : BaseKafkaConsumer<OrderStatusChangedMessage>(kafkaSettings, kafkaSettings.Value.OmsOrderStatusChangedTopic, logger)
 {
-    protected override async Task ProcessMessages(Message<OrderStatusChangedMessage>[] messages, CancellationToken token)
+    protected override async Task ProcessMessage(Message<OrderStatusChangedMessage> message, CancellationToken token)
     {
         using var scope = serviceProvider.CreateScope();
         var client = scope.ServiceProvider.GetRequiredService<OmsClient>();
 
         await client.LogOrder(new V1AuditLogOrderRequest
         {
-            Orders = messages.SelectMany(message => message.Body.OrderItemIds.Select(orderItemId =>
+            Orders = message.Body.OrderItemIds.Select(orderItemId =>
                 new V1AuditLogOrderRequest.LogOrder
                 {
                     OrderId = message.Body.OrderId,
                     OrderItemId = orderItemId,
                     CustomerId = message.Body.CustomerId,
                     OrderStatus = message.Body.OrderStatus
-                })).ToArray()
+                }).ToArray()
         }, token);
     }
 }
