@@ -32,6 +32,7 @@ public class OrderService(
                 DeliveryAddress = o.DeliveryAddress,
                 TotalPriceCents = o.TotalPriceCents,
                 TotalPriceCurrency = o.TotalPriceCurrency,
+                OrderStatus = "created",
                 CreatedAt = now,
                 UpdatedAt = now
             }).ToArray(), token);
@@ -133,6 +134,30 @@ public class OrderService(
 
         return Map(orders, orderItemLookup);
     }
+
+    public async Task<long[]> UpdateOrdersStatus(long[] orderIds, string newStatus, CancellationToken token)
+    {
+        var orders = await orderRepository.Query(new QueryOrdersDalModel
+        {
+            Ids = orderIds
+        }, token);
+
+        if (orders.Length == 0)
+        {
+            return [];
+        }
+
+        foreach (var order in orders)
+        {
+            if (order.OrderStatus == "created" && newStatus == "completed")
+            {
+                throw new InvalidOperationException("Invalid status transition");
+            }
+        }
+
+        var now = DateTimeOffset.UtcNow;
+        return await orderRepository.UpdateStatus(orderIds, newStatus, now, token);
+    }
     
     private OrderUnit[] Map(V1OrderDal[] orders, ILookup<long, V1OrderItemDal> orderItemLookup = null)
     {
@@ -143,6 +168,7 @@ public class OrderService(
             DeliveryAddress = x.DeliveryAddress,
             TotalPriceCents = x.TotalPriceCents,
             TotalPriceCurrency = x.TotalPriceCurrency,
+            OrderStatus = x.OrderStatus,
             CreatedAt = x.CreatedAt,
             UpdatedAt = x.UpdatedAt,
             OrderItems = orderItemLookup?[x.Id].Select(o => new BllOrderItemUnit

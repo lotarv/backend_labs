@@ -18,6 +18,7 @@ public class OrderRepository(UnitOfWork unitOfWork) : IOrderRepository
                 delivery_address,
                 total_price_cents,
                 total_price_currency,
+                order_status,
                 created_at,
                 updated_at
              )
@@ -26,6 +27,7 @@ public class OrderRepository(UnitOfWork unitOfWork) : IOrderRepository
                 delivery_address,
                 total_price_cents,
                 total_price_currency,
+                order_status,
                 created_at,
                 updated_at
             from unnest(@Orders)
@@ -35,6 +37,7 @@ public class OrderRepository(UnitOfWork unitOfWork) : IOrderRepository
                 delivery_address,
                 total_price_cents,
                 total_price_currency,
+                order_status,
                 created_at,
                 updated_at;
         ";
@@ -60,6 +63,7 @@ public class OrderRepository(UnitOfWork unitOfWork) : IOrderRepository
                 delivery_address,
                 total_price_cents,
                 total_price_currency,
+                order_status,
                 created_at,
                 updated_at
             from orders
@@ -106,6 +110,30 @@ public class OrderRepository(UnitOfWork unitOfWork) : IOrderRepository
         var res = await conn.QueryAsync<V1OrderDal>(new CommandDefinition(
             sql.ToString(), param, cancellationToken: token));
         
+        return res.ToArray();
+    }
+
+    public async Task<long[]> UpdateStatus(long[] ids, string status, DateTimeOffset updatedAt, CancellationToken token)
+    {
+        var sql = @"
+            update orders
+            set order_status = @Status,
+                updated_at = @UpdatedAt
+            where id = ANY(@Ids)
+            returning id;
+        ";
+
+        var conn = await unitOfWork.GetConnection(token);
+        var res = await conn.QueryAsync<long>(new CommandDefinition(
+            sql,
+            new
+            {
+                Ids = ids,
+                Status = status,
+                UpdatedAt = updatedAt
+            },
+            cancellationToken: token));
+
         return res.ToArray();
     }
 }
