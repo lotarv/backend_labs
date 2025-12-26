@@ -15,5 +15,14 @@ public class RabbitMqSettings
         public string Queue { get; set; } = string.Empty;
 
         public string RoutingKeyPattern { get; set; } = string.Empty;
+
+        public DeadLetterSettings? DeadLetter { get; set; }
+    }
+
+    public class DeadLetterSettings
+    {
+        public string Dlx { get; set; } = string.Empty;
+
+        public string RoutingKey { get; set; } = string.Empty;
     }
 }

@@ -1,6 +1,7 @@
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 using Models.Dto.V1.Requests;
+using System.Threading;
 using UniverseLabs.Messages;
 using UniverseLabs.Oms.Consumer.Base;
 using UniverseLabs.Oms.Consumer.Clients;
@@ -13,8 +14,15 @@ public class BatchOmsOrderCreatedConsumer(
     IServiceProvider serviceProvider)
     : BaseBatchMessageConsumer<OrderCreatedMessage>(rabbitMqSettings.Value, settings => settings.OrderCreated)
 {
+    private int _batchCounter;
+
     protected override async Task ProcessMessages(OrderCreatedMessage[] messages)
     {
+        if (Interlocked.Increment(ref _batchCounter) % 5 == 0)
+        {
+            throw new InvalidOperationException("Simulated batch failure");
+        }
+
         using var scope = serviceProvider.CreateScope();
         var client = scope.ServiceProvider.GetRequiredService<OmsClient>();
 

@@ -17,5 +17,16 @@ public class RabbitMqSettings
         public ushort BatchSize { get; set; }
 
         public int BatchTimeoutSeconds { get; set; }
+
+        public DeadLetterSettings DeadLetter { get; set; } = new();
+    }
+
+    public class DeadLetterSettings
+    {
+        public string Dlx { get; set; } = string.Empty;
+
+        public string Dlq { get; set; } = string.Empty;
+
+        public string RoutingKey { get; set; } = string.Empty;
     }
 }

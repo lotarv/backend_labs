@@ -40,12 +40,37 @@ public abstract class BaseBatchMessageConsumer<T>(
         var batchTimeout = TimeSpan.FromSeconds(_topicSettings.BatchTimeoutSeconds);
         _batchTimer = new Timer(ProcessBatchByTimeout, null, batchTimeout, batchTimeout);
 
+        await _channel.ExchangeDeclareAsync(
+            exchange: _topicSettings.DeadLetter.Dlx,
+            type: ExchangeType.Direct,
+            durable: true,
+            cancellationToken: token);
+
+        await _channel.QueueDeclareAsync(
+            queue: _topicSettings.DeadLetter.Dlq,
+            durable: true,
+            exclusive: false,
+            autoDelete: false,
+            cancellationToken: token);
+
+        await _channel.QueueBindAsync(
+            queue: _topicSettings.DeadLetter.Dlq,
+            exchange: _topicSettings.DeadLetter.Dlx,
+            routingKey: _topicSettings.DeadLetter.RoutingKey,
+            cancellationToken: token);
+
+        var queueArgs = new Dictionary<string, object>
+        {
+            {"x-dead-letter-exchange", _topicSettings.DeadLetter.Dlx},
+            {"x-dead-letter-routing-key", _topicSettings.DeadLetter.RoutingKey}
+        };
+
         await _channel.QueueDeclareAsync(
             queue: _topicSettings.Queue,
             durable: false,
             exclusive: false,
             autoDelete: false,
-            arguments: null,
+            arguments: queueArgs,
             cancellationToken: token);
 
         var consumer = new AsyncEventingBasicConsumer(_channel);
@@ -136,7 +161,7 @@ public abstract class BaseBatchMessageConsumer<T>(
             Console.WriteLine($"Failed to process batch: {ex.Message}");
 
             var lastDeliveryTag = currentBatch.Max(x => x.DeliveryTag);
-            await _channel.BasicNackAsync(lastDeliveryTag, multiple: true, requeue: true);
+            await _channel.BasicNackAsync(lastDeliveryTag, multiple: true, requeue: false);
         }
     }
 

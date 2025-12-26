@@ -31,12 +31,18 @@ public class RabbitMqService(IOptions<RabbitMqSettings> settings) : IDisposable
 
         foreach (var mapping in settings.Value.ExchangeMappings)
         {
+            var args = mapping.DeadLetter is null ? null : new Dictionary<string, object>
+            {
+                { "x-dead-letter-exchange", mapping.DeadLetter.Dlx },
+                { "x-dead-letter-routing-key", mapping.DeadLetter.RoutingKey }
+            };
+
             await _channel.QueueDeclareAsync(
                 queue: mapping.Queue,
                 durable: false,
                 exclusive: false,
                 autoDelete: false,
-                arguments: null,
+                arguments: args,
                 cancellationToken: token);
 
             await _channel.QueueBindAsync(
