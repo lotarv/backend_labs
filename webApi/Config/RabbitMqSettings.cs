@@ -6,9 +6,14 @@ public class RabbitMqSettings
 
     public int Port { get; set; }
 
-    public string OrderCreatedQueue { get; set; } = string.Empty;
+    public string Exchange { get; set; } = string.Empty;
 
-    public ushort BatchSize { get; set; }
+    public ExchangeMapping[] ExchangeMappings { get; set; } = [];
 
-    public int BatchTimeoutSeconds { get; set; }
+    public class ExchangeMapping
+    {
+        public string Queue { get; set; } = string.Empty;
+
+        public string RoutingKeyPattern { get; set; } = string.Empty;
+    }
 }

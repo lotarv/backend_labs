@@ -19,7 +19,7 @@ builder.Services.AddScoped<UnitOfWork>();
 
 builder.Services.Configure<DbSettings>(builder.Configuration.GetSection(nameof(DbSettings)));
 builder.Services.Configure<WebApi.Config.RabbitMqSettings>(
-    builder.Configuration.GetSection(nameof(WebApi.Config.RabbitMqSettings)));
+    builder.Configuration.GetSection("RabbitMq"));
 
 builder.Services.AddScoped<IOrderRepository, OrderRepository>();
 builder.Services.AddScoped<IOrderItemRepository, OrderItemRepository>();

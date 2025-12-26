@@ -1,11 +1,9 @@
 using Backend.BLL.Models;
 using Backend.DAL.Interfaces;
 using Backend.DAL.Models;
-using Microsoft.Extensions.Options;
 using UniverseLabs.Messages;
 using BllOrderItemUnit = Backend.BLL.Models.OrderItemUnit;
 using MessagesOrderItemUnit = UniverseLabs.Messages.OrderItemUnit;
-using WebApi.Config;
 
 namespace Backend.BLL.Services;
 
@@ -13,8 +11,7 @@ public class OrderService(
     UnitOfWork unitOfWork,
     IOrderRepository orderRepository,
     IOrderItemRepository orderItemRepository,
-    RabbitMqService rabbitMqService,
-    IOptions<RabbitMqSettings> rabbitMqSettings)
+    RabbitMqService rabbitMqService)
 {
     /// <summary>
     /// Метод создания заказов
@@ -72,6 +69,7 @@ public class OrderService(
                 DeliveryAddress = x.DeliveryAddress,
                 TotalPriceCents = x.TotalPriceCents,
                 TotalPriceCurrency = x.TotalPriceCurrency,
+                OrderStatus = x.OrderStatus,
                 CreatedAt = x.CreatedAt,
                 UpdatedAt = x.UpdatedAt,
                 OrderItems = x.OrderItems.Select(i => new MessagesOrderItemUnit
@@ -89,10 +87,7 @@ public class OrderService(
                 }).ToArray()
             }).ToArray();
 
-            await rabbitMqService.Publish(
-                messages,
-                rabbitMqSettings.Value.OrderCreatedQueue,
-                token);
+            await rabbitMqService.Publish(messages, token);
 
             return orders;
         }
@@ -156,7 +151,17 @@ public class OrderService(
         }
 
         var now = DateTimeOffset.UtcNow;
-        return await orderRepository.UpdateStatus(orderIds, newStatus, now, token);
+        var updatedIds = await orderRepository.UpdateStatus(orderIds, newStatus, now, token);
+
+        var messages = updatedIds.Select(id => new OrderStatusChangedMessage
+        {
+            OrderId = id,
+            OrderStatus = newStatus
+        }).ToArray();
+
+        await rabbitMqService.Publish(messages, token);
+
+        return updatedIds;
     }
     
     private OrderUnit[] Map(V1OrderDal[] orders, ILookup<long, V1OrderItemDal> orderItemLookup = null)
