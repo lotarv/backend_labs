@@ -1,7 +1,9 @@
 using Backend.BLL.Models;
 using Backend.DAL.Interfaces;
 using Backend.DAL.Models;
+using Microsoft.Extensions.Options;
 using UniverseLabs.Messages;
+using WebApi.Config;
 using BllOrderItemUnit = Backend.BLL.Models.OrderItemUnit;
 using MessagesOrderItemUnit = UniverseLabs.Messages.OrderItemUnit;
 
@@ -11,7 +13,8 @@ public class OrderService(
     UnitOfWork unitOfWork,
     IOrderRepository orderRepository,
     IOrderItemRepository orderItemRepository,
-    RabbitMqService rabbitMqService)
+    KafkaProducer kafkaProducer,
+    IOptions<KafkaSettings> kafkaSettings)
 {
     /// <summary>
     /// Метод создания заказов
@@ -87,7 +90,10 @@ public class OrderService(
                 }).ToArray()
             }).ToArray();
 
-            await rabbitMqService.Publish(messages, token);
+            await kafkaProducer.Produce(
+                kafkaSettings.Value.OmsOrderCreatedTopic,
+                messages.Select(x => (x.CustomerId.ToString(), x)).ToArray(),
+                token);
 
             return orders;
         }
@@ -168,7 +174,10 @@ public class OrderService(
             OrderStatus = newStatus
         }).ToArray();
 
-        await rabbitMqService.Publish(messages, token);
+        await kafkaProducer.Produce(
+            kafkaSettings.Value.OmsOrderStatusChangedTopic,
+            messages.Select(x => (x.CustomerId.ToString(), x)).ToArray(),
+            token);
 
         return updatedIds;
     }

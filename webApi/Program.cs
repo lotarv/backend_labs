@@ -18,15 +18,15 @@ builder.Services.AddScoped<UnitOfWork>();
 // зависимость, которая автоматически подхватывает все контроллеры в проекте
 
 builder.Services.Configure<DbSettings>(builder.Configuration.GetSection(nameof(DbSettings)));
-builder.Services.Configure<WebApi.Config.RabbitMqSettings>(
-    builder.Configuration.GetSection("RabbitMq"));
+builder.Services.Configure<WebApi.Config.KafkaSettings>(
+    builder.Configuration.GetSection(nameof(WebApi.Config.KafkaSettings)));
 
 builder.Services.AddScoped<IOrderRepository, OrderRepository>();
 builder.Services.AddScoped<IOrderItemRepository, OrderItemRepository>();
 builder.Services.AddScoped<IAuditLogOrderRepository, AuditLogOrderRepository>();
 builder.Services.AddScoped<OrderService>();
 builder.Services.AddScoped<AuditLogOrderService>();
-builder.Services.AddScoped<RabbitMqService>();
+builder.Services.AddScoped<KafkaProducer>();
 builder.Services.AddValidatorsFromAssemblyContaining(typeof(Program));
 builder.Services.AddScoped<ValidatorFactory>();
 builder.Services.AddControllers().AddJsonOptions(options =>
