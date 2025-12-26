@@ -22,6 +22,7 @@ builder.Services.Configure<WebApi.Config.RabbitMqSettings>(
 builder.Services.AddScoped<IOrderRepository, OrderRepository>();
 builder.Services.AddScoped<IOrderItemRepository, OrderItemRepository>();
 builder.Services.AddScoped<OrderService>();
+builder.Services.AddScoped<RabbitMqService>();
 builder.Services.AddValidatorsFromAssemblyContaining(typeof(Program));
 builder.Services.AddScoped<ValidatorFactory>();
 builder.Services.AddControllers();
