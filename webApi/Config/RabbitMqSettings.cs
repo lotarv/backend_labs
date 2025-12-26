@@ -7,4 +7,8 @@ public class RabbitMqSettings
     public int Port { get; set; }
 
     public string OrderCreatedQueue { get; set; } = string.Empty;
+
+    public ushort BatchSize { get; set; }
+
+    public int BatchTimeoutSeconds { get; set; }
 }
