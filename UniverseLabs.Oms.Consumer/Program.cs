@@ -10,8 +10,8 @@ builder.Services.Configure<HostOptions>(options =>
     options.ServicesStartConcurrently = true;
     options.ServicesStopConcurrently = true;
 });
-builder.Services.AddHostedService<OmsOrderCreatedConsumer>();
-builder.Services.AddHostedService<OmsOrderStatusChangedConsumer>();
+builder.Services.AddHostedService<BatchOmsOrderCreatedConsumer>();
+builder.Services.AddHostedService<BatchOmsOrderStatusChangedConsumer>();
 builder.Services.AddHttpClient<OmsClient>(c =>
     c.BaseAddress = new Uri(builder.Configuration["HttpClient:Oms:BaseAddress"]));
 

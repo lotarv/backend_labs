@@ -9,4 +9,8 @@ public class KafkaSettings
     public string OmsOrderCreatedTopic { get; set; } = string.Empty;
 
     public string OmsOrderStatusChangedTopic { get; set; } = string.Empty;
+
+    public int CollectBatchSize { get; set; }
+
+    public int CollectTimeoutMs { get; set; }
 }
